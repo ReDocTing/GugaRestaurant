@@ -6,7 +6,7 @@
 
 ## 下载
 
-到右边的 **[Releases](../../releases/latest)** 下载 `咕嘎餐馆_V2.0.zip`（约 200MB），解压到任意文件夹，双击里面的 `咕嘎餐馆.exe` 就能用，不用装 Python 或别的东西。
+直接点这里下载：**[GugaRestaurant_V2.0.zip](https://github.com/ReDocTing/GugaRestaurant/releases/download/v2.0/GugaRestaurant_V2.0.zip)**（约 200MB，也可以在右边的 [Releases](../../releases/latest) 里找），解压到任意文件夹，双击里面的 `咕嘎餐馆.exe` 就能用，不用装 Python 或别的东西。
 
 > 解压后整个文件夹要放在一起：`picture_laotao`、`menu`、`test_channel` 是识别用的图片和数据，别删、别改名。
 
