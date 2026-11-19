@@ -34,7 +34,7 @@ The program was built around the author's setup. With a different one it may mis
 
 ### Menu: 8 dishes + 6 drinks
 
-![Menu](docs/menu.jpg)
+<img src="docs/menu.jpg" width="640" alt="Menu">
 
 **Dishes (in this order)**: 界龙肉卷, 茄汁白瓜, 糯米凉糕, 酸辣汤, 手擀素面, 肉包子, 菌菇蒸饺, 豌杂拌面
 
@@ -45,13 +45,13 @@ The program was built around the author's setup. With a different one it may mis
 
 **Drinks (in this order)**: 瓶装霞莓饮 (fruit-scented / 果香), 潮前龙井 (tea-scented / 茶香), 梨花香茶, 大碗碎茶, 瓶装脆蔗汁, 玉米汁
 
-![Drinks](docs/drinks.jpg)
+<img src="docs/drinks.jpg" width="640" alt="Drinks">
 
 - **霞莓饮 must be first and 潮前龙井 second**: the program clicks fixed positions in the drink station panel (top-left = fruit-scented, top-right = tea-scented).
 
 ### Kitchen
 
-![Kitchen setup](docs/kitchen.jpg)
+<img src="docs/kitchen.jpg" width="640" alt="Kitchen setup">
 
 | Kitchen | Operators |
 |---|---|
