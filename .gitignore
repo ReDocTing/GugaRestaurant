@@ -1,0 +1,18 @@
+venv/
+__pycache__/
+build/
+dist/
+*.spec
+
+# 运行时生成的
+对局记录.csv
+test_channel/run.log*
+test_channel/scores.jsonl
+test_channel/wang_log.jsonl
+test_channel/affinity.txt
+test_channel/trace/
+test_channel/wang_fail/
+test_channel/hb/
+test_channel/cmd.json
+test_channel/result.json
+test_channel/shot.jpg
