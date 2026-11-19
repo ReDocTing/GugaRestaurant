@@ -38,9 +38,10 @@ The program was built around the author's setup. With a different one it may mis
 
 **Dishes (in this order)**: 界龙肉卷, 茄汁白瓜, 糯米凉糕, 酸辣汤, 手擀素面, 肉包子, 菌菇蒸饺, 豌杂拌面
 
-- **界龙肉卷** is required: it's the only dish the program cooks (it finds this dish's card in the cooking screen).
-- **糯米凉糕** is required: one portion is cooked at the start and left in the first slot of the counter as the positioning origin; it's never picked up.
-- The other dishes are there to meet the game's menu rules (8 dishes, at least one each of 主食 staple / 菜肴 entrée / 甜品 dessert / 汤羹 soup).
+> ⚠️ **Don't change any of these 8 dishes or their order.** The whole menu was picked by checking it against each gourmet guest's order requirements, and the program's order matching is written for exactly this menu. Swapping any dish can make guests' orders impossible to satisfy and break the serving streak.
+
+- **界龙肉卷** is the main dish: it's the only one the program cooks (it finds this dish's card in the cooking screen).
+- **糯米凉糕**: one portion is cooked at the start and left in the first slot of the counter as the positioning origin; it's never picked up.
 
 **Drinks (in this order)**: 瓶装霞莓饮 (fruit-scented / 果香), 潮前龙井 (tea-scented / 茶香), 梨花香茶, 大碗碎茶, 瓶装脆蔗汁, 玉米汁
 
