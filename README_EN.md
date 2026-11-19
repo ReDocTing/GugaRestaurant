@@ -9,6 +9,7 @@ A fully automatic helper for the "食有老饕" (Gourmet Guests) restaurant acti
 - Author: ReDocTing
 - License: MIT (see [LICENSE](LICENSE))
 - Measured (正式经营 / regular business mode): 16 rounds in a row averaged 5615 revenue (lowest 5123), never got lost, and most rounds served all 15 tables
+- Demo video: [Bilibili BV1HoWT6DEAS](https://www.bilibili.com/video/BV1HoWT6DEAS/)
 
 > The game UI is in Chinese, and so are the program's interface, logs and most code comments.
 
@@ -17,7 +18,7 @@ A fully automatic helper for the "食有老饕" (Gourmet Guests) restaurant acti
 Download `GugaRestaurant_V2.1.zip` (user build, about 200MB) from **[Releases](../../releases/latest)**, unzip it anywhere, and double-click `咕嘎餐馆.exe`.
 
 1. Windows 10 / 11. Run the game in **windowed mode at 1920×1080**. Keep the game window uncovered and don't touch the mouse or keyboard while it runs (it works by reading the screen).
-2. Use the author's menu (mainly 界龙肉卷 as the staple dish) and don't move dishes around on the menu.
+2. Pick the 「食有老饕」 theme, and set up the menu and kitchen as described in [In-game setup](#in-game-setup-menu-and-kitchen) below.
 3. Stand next to the 「开始经营」 (Start business) prompt at the 缘缘庄 counter, facing the counter.
 4. Start the program (it needs administrator rights because the game runs as administrator; click "Yes"), pick the number of rounds and the mode, then click 「开始挂机」 (Start). Regular business mode (正式经营) uses up about 60 customer supply per round.
 5. **Emergency stop**: press the `~` key (above Tab), or click 「停止」 (Stop).
@@ -26,6 +27,37 @@ Download `GugaRestaurant_V2.1.zip` (user build, about 200MB) from **[Releases](.
 > Keep the unzipped folder together: `picture_laotao`, `menu` and `test_channel` hold the images and data used for recognition. Don't delete or rename them.
 >
 > The exe isn't code-signed. If Windows shows "Windows protected your PC", click "More info" → "Run anyway". Some antivirus software may flag it (a Python-packaged program that simulates key presses); add an exception if so.
+
+## In-game setup (menu and kitchen)
+
+The program was built around the author's setup. With a different one it may misrecognize things or click the wrong item.
+
+### Menu: 8 dishes + 6 drinks
+
+![Menu](docs/menu.jpg)
+
+**Dishes (in this order)**: 界龙肉卷, 茄汁白瓜, 糯米凉糕, 酸辣汤, 手擀素面, 肉包子, 菌菇蒸饺, 豌杂拌面
+
+- **界龙肉卷** is required: it's the only dish the program cooks (it finds this dish's card in the cooking screen).
+- **糯米凉糕** is required: one portion is cooked at the start and left in the first slot of the counter as the positioning origin; it's never picked up.
+- The other dishes are there to meet the game's menu rules (8 dishes, at least one each of 主食 staple / 菜肴 entrée / 甜品 dessert / 汤羹 soup).
+
+**Drinks (in this order)**: 瓶装霞莓饮 (fruit-scented / 果香), 潮前龙井 (tea-scented / 茶香), 梨花香茶, 大碗碎茶, 瓶装脆蔗汁, 玉米汁
+
+- **霞莓饮 must be first and 潮前龙井 second**: the program clicks fixed positions in the drink station panel (top-left = fruit-scented, top-right = tea-scented).
+
+### Kitchen
+
+![Kitchen setup](docs/kitchen.jpg)
+
+| Kitchen | Operators |
+|---|---|
+| 厨房一 (Kitchen 1) | 大厨狼卫, 大厨别礼 |
+| 厨房二 (Kitchen 2) | 大厨莱万汀, 大厨秋栗 |
+| 厨房三 (Kitchen 3) | 大厨余烬, 大厨卡缪 |
+
+- Assist role (协助职责): an operator with 结账 (checkout) / 上饮品 (serve drinks) / 上菜 (serve dishes); quality control (品质把控) gives +8% chance of premium dishes (珍馐) in all kitchens.
+- Kitchen operators affect cooking speed and the premium-dish chance. Other operators work too, with different revenue; but every kitchen needs **at least one operator** or the round can't start.
 
 ## What's new in V2.1
 
