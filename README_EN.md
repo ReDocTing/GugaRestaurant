@@ -45,6 +45,8 @@ The program was built around the author's setup. With a different one it may mis
 
 **Drinks (in this order)**: 瓶装霞莓饮 (fruit-scented / 果香), 潮前龙井 (tea-scented / 茶香), 梨花香茶, 大碗碎茶, 瓶装脆蔗汁, 玉米汁
 
+![Drinks](docs/drinks.jpg)
+
 - **霞莓饮 must be first and 潮前龙井 second**: the program clicks fixed positions in the drink station panel (top-left = fruit-scented, top-right = tea-scented).
 
 ### Kitchen
