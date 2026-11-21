@@ -52,6 +52,8 @@ HINT = "紧急停止：键盘 ~ 键（Tab 上面）"
 def stop_reason(s):
     """停下来时给使用者看的一句话（不写任何日志文件）"""
     s = re.sub(r"（截图在[^）]*）", "", s.strip())
+    if "客源不足" in s:
+        return "客源不足，开不了正式经营（每局约 60 客源，恢复后再开，或改用试营业）"
     if s.startswith("出错"):
         return "出错停下了：" + s[3:].strip()[:40]
     if s.startswith("已停止"):
@@ -345,6 +347,7 @@ class App:
         for n in self.table_tiles:
             self._set_table(n, "other")
         self.status_lbl.configure(text=HINT, fg=C_MUTED)
+        self._why_shown = False
         self._refresh_stats()
         self.root.lower()  # 程序窗口别挡住游戏（识别是按屏幕画面来的）
         self.worker = threading.Thread(target=self.work, args=(rounds,), daemon=True)
@@ -425,8 +428,10 @@ class App:
             self._on_score(s)
             return
         why = stop_reason(s)
-        if why:
+        if why and not (why == "已手动停止" and getattr(self, "_why_shown", False)):
+            # 已经显示了具体原因（如客源不足）时，后面跟着的「已停止」不再盖掉它
             self.status_lbl.configure(text=why, fg=C_RED)
+            self._why_shown = why != "已手动停止"
 
     def _on_score(self, s):
         inc = re.search(r"营业额 (\d+)", s)
@@ -554,6 +559,7 @@ class App:
 if __name__ == "__main__":
     import sys
     core.avoid_bad_cpus()
+    core.full_speed()  # 不让 Windows 把程序放进效率模式（窗口在游戏后面时会被降速，识别慢好几倍）
     app = App()
     # 命令行：--pos X,Y 指定窗口位置；--autostart N 打开 4 秒后自动开始 N 局（录视频/计划任务用）
     if "--pos" in sys.argv:

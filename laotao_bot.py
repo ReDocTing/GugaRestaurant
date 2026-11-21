@@ -222,6 +222,43 @@ GAME_TITLE = "Endfield"
 AVOID_CPUS_DEFAULT = []  # 发布版：不限制 CPU 核心
 
 
+def full_speed(log_path=None):
+    """v101：本进程不要被 Windows 降速。
+    计划任务启动的程序默认「低于正常」优先级，Windows 11 在平衡电源方案下会把窗口被挡住/在后台的低优先级程序
+    放进「效率模式」（EcoQoS），只给小核、压低频率。实测读一次点单从 0.85 秒变成 3.5 秒（11-21 接待后要等 4.5 秒、
+    取菜/开料理界面都慢一倍，走路按键计时的不受影响）。这里只改本进程自己：优先级提到「高于正常」、声明不要节能。
+    子进程（MaaEnd 桥）会继承优先级。不改任何系统设置"""
+    msgs = []
+    try:
+        k32 = ctypes.windll.kernel32
+        k32.GetCurrentProcess.restype = ctypes.c_void_p
+        k32.SetPriorityClass.argtypes = [ctypes.c_void_p, ctypes.c_ulong]
+        k32.GetPriorityClass.argtypes = [ctypes.c_void_p]
+        h = k32.GetCurrentProcess()
+        before = k32.GetPriorityClass(h)
+        k32.SetPriorityClass(h, 0x8000)  # ABOVE_NORMAL_PRIORITY_CLASS
+        msgs.append(f"优先级 {before:#x}→{k32.GetPriorityClass(h):#x}")
+
+        class _PPT(ctypes.Structure):
+            _fields_ = [("Version", ctypes.c_ulong), ("ControlMask", ctypes.c_ulong), ("StateMask", ctypes.c_ulong)]
+        k32.SetProcessInformation.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p, ctypes.c_ulong]
+        # ControlMask = EXECUTION_SPEED(1) | IGNORE_TIMER_RESOLUTION(4)，StateMask = 0：明确不节能（HighQoS）
+        st = _PPT(1, 0x1 | 0x4, 0)
+        ok = k32.SetProcessInformation(h, 4, ctypes.byref(st), ctypes.sizeof(st))  # 4 = ProcessPowerThrottling
+        msgs.append("不节能：" + ("已设" if ok else "失败"))
+    except Exception as e:
+        msgs.append(f"出错 {e}")
+    if log_path is None:
+        return msgs  # 发布版：不写记录文件
+    try:
+        with open(log_path, "a", encoding="utf-8") as f:
+            line = "，".join(msgs)
+            f.write(time.strftime("%m-%d %H:%M:%S") + f" 本进程 {os.getpid()} 全速运行：{line}" + chr(10))
+    except Exception:
+        pass
+    return msgs
+
+
 def avoid_bad_cpus(pid=None, cpus=None):
     """把进程（默认本进程）的 CPU 亲和性设成「除了坏核心以外的全部」。失败（没权限等）就算了，不影响运行"""
     try:
@@ -2901,6 +2938,8 @@ class Navigator:
         补完回到饮品台站好；回不去返回 False"""
         if not self.cfg.get("topup_at_D", True) or time.time() - getattr(self, "_topup_t", 0) < 4:
             return True
+        if getattr(self, "_go_direct", False):
+            return True  # v104：满堂彩后去接正在来的新客人、手上有一菜一饮：路过饮品台也不补
         det = self.g.hotbar_detail()
         nd, nk = det.count("dish"), sum(1 for x in det if x in DRINK_TAGS)
         full = sum(1 for x in det if x) >= 5
@@ -4730,6 +4769,32 @@ class Navigator:
         n_fetch = max(0, min(slots, total - len(held), int(self.cfg.get("max_drinks", 5)) - len(held)))
         if n_fetch <= 0:
             return []
+        if self.fired() and self.cfg.get("fired_tea_fruit_pair", True):
+            # v103（用户 11-21 定）：满堂彩后回饮品台，手上的饮品保持 1 茶 1 果（不是两瓶果香，撤掉 v102）。
+            # 已读到要求、手上没有对的桌先按要求拿；再保证茶、果各至少一瓶；还有空就补数量少的那种。
+            # 送的时候对得上要求就送对的，对不上手上有就直接送（v80，drink_ok/serve_here 已是这样）
+            pool2, add = list(held), []
+            for n in need:
+                c = self.want.get(n, "")
+                if not c:
+                    continue
+                m = next((t for t in pool2 if drink_cond_ok(c, t)), None)
+                if m:
+                    pool2.remove(m)
+                else:
+                    tg = self.pick_tag(c)
+                    if tg:
+                        add.append(tg)
+            final = list(held) + add
+            for t in ("茶香", "果香"):
+                if t not in final:
+                    add.append(t)
+                    final.append(t)
+            while len(final) < len(held) + n_fetch:
+                t = "果香" if final.count("果香") <= final.count("茶香") else "茶香"
+                add.append(t)
+                final.append(t)
+            return add[:n_fetch]
         pool, fetch = list(held), []
         for n in need:
             c = self.want.get(n, "") if self.drink_known(n) else ""
@@ -5458,6 +5523,16 @@ class Navigator:
                 except Exception:
                     pass
                 return True
+            if (mode == "正式经营" and time.time() - getattr(self, "_pool_check_t", 0) > 2
+                    and self.g.find_ui("ui_btn_try", 0.75, img) and not self.g.find_ui(btn_mode, 0.75, img)):
+                # v105：客源不够一局（每局 60）时「正式经营」按钮变成「客源不足」，模板认不出来，
+                # 以前会一直按 F、传送回吧台重试（11-21 16:07~16:12 来回十几分钟）。读到「客源不足」就关菜单、停下
+                self._pool_check_t = time.time()
+                if self.g.ocr_find("客源不足", region=(1480, 940, 1840, 1040)):
+                    self.log("客源不足，开不了正式经营：停止（客源会随时间恢复，够 60 再开）")
+                    self.g.press("esc")
+                    time.sleep(0.5)
+                    raise Stopped()
             step = None
             for name, desc, thr in (("ui_btn_open", "开始经营", 0.7), ("ui_btn_menu", "设定菜单", 0.75),
                                     (btn_mode, mode, 0.75)):
@@ -5660,6 +5735,15 @@ class Navigator:
             det = self.g.hotbar_detail()
             todo = [n for n in self.route(orders) if self.can_serve(n, orders[n], det)
                     and time.time() >= self.fail_until.get(n, 0)]
+            # v104（用户 11-21 定）：满堂彩加速结束后，没有等菜的桌、只有新客人正在来（顶部刚变「老饕」，客人还在走向座位），
+            # 手上有至少一菜一饮：不在吧台/饮品台补货，直接去那桌边上等客人坐下（receive 里会等，别的桌没事时最多 10 秒）。
+            # 实测 14:21:35 6 号来客时先取了 1 份菜才出发
+            go_direct = bool(self.cfg.get("fired_go_direct", True) and self.fired() and not self.g.boost_active()
+                             and wait and not orders and "dish" in det and any(x in DRINK_TAGS for x in det))
+            self._go_direct = go_direct
+            if go_direct and set(wait) != getattr(self, "_go_direct_logged", set()):
+                self._go_direct_logged = set(wait)
+                self.log(f"满堂彩后：新客人 {wait} 正在来，手上有一菜一饮，不补货直接过去等")
 
             # 0. 顺手：在吧台前、吧台上有做好的菜、等着的桌还缺菜、手上有空位 → 拿上
             free_slots = 5 - sum(1 for x in det if x)
@@ -5677,7 +5761,7 @@ class Navigator:
             #    饮品先拿：人在吧台这头、有桌在等已经知道要什么的饮品 → 先去旁边的饮品台拿（饮品不用等厨房，
             #    送齐一桌靠的就是饮品；以前手上塞满了菜，饮品要等一两分钟才去拿，桌子迟迟送不齐）
             #    只在正站在饮品台时拿：已经往过道方向取过菜了就不再滑回饮品台重新对一次（一趟拿齐，饮品下趟再补）
-            if (free_slots > 0 and self.at_drink and self.pos is not None and self.pos[1] < 0.3
+            if (free_slots > 0 and self.at_drink and self.pos is not None and self.pos[1] < 0.3 and not go_direct
                     and time.time() - getattr(self, "_drink_try", 0) > 5):
                 tags = self.drink_plan()
                 if tags:
@@ -5696,7 +5780,7 @@ class Navigator:
                     continue
             # v82：收尾刚判「来不及只拿饮品」：8 秒内手上有菜就不再顺手取菜（23:57 拿完饮品又被这里和 topup_at_D 取了 2 份菜，多 4 秒）
             nodish_win = time.time() < getattr(self, "_nodish_until", 0) and "dish" in det
-            if nodish_win:
+            if nodish_win or go_direct:
                 want_dish = 0
             lf_c = self.g.left_est()
             if (self.cfg.get("closed_dish_exact", True) and lf_c is not None and lf_c < 0 and wait_all
@@ -5717,7 +5801,7 @@ class Navigator:
                     self.last_dish_try = time.time()
                 continue
             #    在饮品台旁边、有桌缺饮品且知道要什么 → 拿上
-            if self.at_drink and free_slots > 0 and time.time() - getattr(self, "_drink_try", 0) > 5:
+            if self.at_drink and free_slots > 0 and not go_direct and time.time() - getattr(self, "_drink_try", 0) > 5:
                 tags = self.drink_plan()
                 if tags:
                     self._drink_try = time.time()
@@ -5761,7 +5845,7 @@ class Navigator:
                         self._nodish_until = time.time() + float(self.cfg.get("nodish_window", 15))
                     self.restock(no_dish=nodish, no_drink=nodrink)
                     continue
-            if (self.cfg.get("topup_at_D", True) and (wait or orders) and not nodish_win
+            if (self.cfg.get("topup_at_D", True) and (wait or orders) and not nodish_win and not go_direct
                     and (self.at_drink or getattr(self, "wn_at", None) == "D")
                     and (det.count("dish") < 2 or not any(x in DRINK_TAGS for x in det))
                     and sum(1 for x in det if x) < 5 and time.time() - getattr(self, "_topup_t", 0) > 6):
@@ -6600,4 +6684,5 @@ class App:
 
 if __name__ == "__main__":
     avoid_bad_cpus()  # 本程序和之后启动的子进程都不用坏核心
+    full_speed()  # v101：不让 Windows 把本程序放进效率模式（计划任务默认低优先级 + 窗口在后台 → 计算慢 4 倍）
     App().mainloop()

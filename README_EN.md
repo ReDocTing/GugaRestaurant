@@ -8,7 +8,7 @@ A fully automatic helper for the "食有老饕" (Gourmet Guests) restaurant acti
 
 - Author: ReDocTing
 - License: MIT (see [LICENSE](LICENSE))
-- Measured (正式经营 / regular business mode): 16 rounds in a row averaged 5615 revenue (lowest 5123), never got lost, and most rounds served all 15 tables
+- Measured (正式经营 / regular business mode, author's dev setup): 12 rounds in a row averaged 5690 revenue (lowest 5437), all 12 served all 15 tables, never got lost
 - Demo video: [Bilibili BV1HoWT6DEAS](https://www.bilibili.com/video/BV1HoWT6DEAS/)
 
 > The game UI is in Chinese, and so are the program's interface, logs and most code comments.
@@ -69,6 +69,10 @@ The program was built around the author's setup. With a different one it may mis
 - Stopping now immediately releases every key and mouse button
 - When heading out straight from the serving counter, it first returns to the drink station if it's too far away, which reduces wrong turns
 - Fixed the "tables fully served" count
+- No more Windows throttling: when the program's window sits behind the game, Windows 11 can put it into Efficiency Mode and recognition gets several times slower. It now opts out of power throttling and raises its own priority at startup (only for this program; no system settings are changed)
+- After the full-house bonus, it keeps one tea and one fruit drink in hand when restocking; tables whose request was read get what they asked for first
+- After the full-house bonus ends, if no table is waiting for food and a new guest is on the way, it goes straight to the guest when holding at least one dish and one drink, instead of restocking first
+- In regular business mode, it stops with a message when customer supply runs out (about 60 per round) instead of retrying over and over
 
 ## Run from source
 
